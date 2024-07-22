@@ -37,6 +37,7 @@ Partial Class Form1
         Me.Button6 = New System.Windows.Forms.Button()
         Me.Button7 = New System.Windows.Forms.Button()
         Me.Button8 = New System.Windows.Forms.Button()
+        Me.Button9 = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'Button1
@@ -70,9 +71,9 @@ Partial Class Form1
         Me.Label4.AutoSize = True
         Me.Label4.Location = New System.Drawing.Point(140, 13)
         Me.Label4.Name = "Label4"
-        Me.Label4.Size = New System.Drawing.Size(39, 13)
+        Me.Label4.Size = New System.Drawing.Size(37, 13)
         Me.Label4.TabIndex = 8
-        Me.Label4.Text = "Label4"
+        Me.Label4.Text = "?????"
         '
         'Button3
         '
@@ -168,11 +169,21 @@ Partial Class Form1
         Me.Button8.Text = "Set Champion"
         Me.Button8.UseVisualStyleBackColor = True
         '
+        'Button9
+        '
+        Me.Button9.Location = New System.Drawing.Point(483, 415)
+        Me.Button9.Name = "Button9"
+        Me.Button9.Size = New System.Drawing.Size(103, 23)
+        Me.Button9.TabIndex = 21
+        Me.Button9.Text = "2X Ball Mode"
+        Me.Button9.UseVisualStyleBackColor = True
+        '
         'Form1
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(824, 450)
+        Me.Controls.Add(Me.Button9)
         Me.Controls.Add(Me.Button8)
         Me.Controls.Add(Me.Button7)
         Me.Controls.Add(Me.Button6)
@@ -210,4 +221,5 @@ Partial Class Form1
     Friend WithEvents Button6 As Button
     Friend WithEvents Button7 As Button
     Friend WithEvents Button8 As Button
+    Friend WithEvents Button9 As Button
 End Class

@@ -26,6 +26,8 @@ Public Class Form1
     Public players As New List(Of Player)
     Public numballs As Integer = 0
     Public roundnum As Integer = 0
+    Public ballmultiplier As Integer = 1
+    Dim channel As String
 
     Enum GameModes
         registration
@@ -34,6 +36,12 @@ Public Class Form1
         results
     End Enum
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
+        If My.Settings.channel = "" Then
+            channel = InputBox("What is the name of your channel?  Omit the 'twitch.tv/' part.")
+            My.Settings.channel = channel
+        Else
+            channel = My.Settings.channel
+        End If
         gametimer = New Timer(1000)
         AddHandler gametimer.Elapsed, New ElapsedEventHandler(AddressOf GameTimer_Tick)
         wordlist = My.Resources.LingoWords.Split(vbCrLf.ToCharArray, StringSplitOptions.RemoveEmptyEntries).ToList
@@ -43,7 +51,7 @@ Public Class Form1
         Next
         Dim credentials As New ConnectionCredentials("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym")
         client = New TwitchClient()
-        client.Initialize(credentials, "liquid_kourage")
+        client.Initialize(credentials, channel)
         AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
         AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
         AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
@@ -59,9 +67,15 @@ Public Class Form1
             Me.Invoke(Sub() dumpdata())
             Me.Invoke(Sub() Me.Close())
         End Try
-
-        PublicDisplay.Location = Screen.AllScreens(0).Bounds.Location
-        PublicDisplay.Size = Screen.AllScreens(0).Bounds.Size
+        Dim screennumber As Integer = 0
+        If My.Settings.screennumber = -1 Then
+            screennumber = InputBox("Which monitor should the public display use?  Typically, 0 is your 'main' display and 1,2,etc. are additional displays.  It is recommended to have the public display set up on a separate monitor from your main one.")
+            My.Settings.screennumber = screennumber
+        Else
+            screennumber = My.Settings.screennumber
+        End If
+        PublicDisplay.Location = Screen.AllScreens(screennumber).Bounds.Location
+        PublicDisplay.Size = Screen.AllScreens(screennumber).Bounds.Size
         PublicDisplay.Show()
     End Sub
 
@@ -88,7 +102,7 @@ Public Class Form1
         Dim credentials As New ConnectionCredentials("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym")
         'Dim credentials As New ConnectionCredentials("liquid_kourage", "j1kiijo0ymyef61xq6nbvr9jsw7f7i")
         client = New TwitchClient()
-        client.Initialize(credentials, "liquid_kourage")
+        client.Initialize(credentials, channel)
         AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
         AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
         AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
@@ -128,6 +142,8 @@ Public Class Form1
                 '        Me.Invoke(Sub() updateplayerguess(e.ChatMessage.Username, e.ChatMessage.Message))
                 '        Me.Invoke(Sub() lockinplayerguess(e.ChatMessage.Username))
                 '    End If
+            Case e.ChatMessage.Message.ToLower = "!feedback"
+                Me.Invoke(Sub() sendfeedback(e.ChatMessage.Username, client, "chat"))
         End Select
     End Sub
 
@@ -169,14 +185,15 @@ Public Class Form1
             Case e.WhisperMessage.Message.ToLower = "!out"
                 Me.Invoke(Sub() unregisterplayer(e.WhisperMessage.Username))
             Case e.WhisperMessage.Message.ToLower = "!feedback"
-                Me.Invoke(Sub() sendfeedback(e.WhisperMessage.Username, client))
+                Me.Invoke(Sub() sendfeedback(e.WhisperMessage.Username, client, "whisper"))
             Case gamemode = GameModes.guessing
                 If System.Text.RegularExpressions.Regex.IsMatch(e.WhisperMessage.Message, "^[A-Za-z]{5}$") Then
                     Me.Invoke(Sub() updateplayerguess(e.WhisperMessage.Username, e.WhisperMessage.Message))
                     Me.Invoke(Sub() lockinplayerguess(e.WhisperMessage.Username))
                     Dim stillwaiting As Boolean = False
                     For Each p As Player In players
-                        If p.guess = "" OrElse p.guess = "@@@@@" Then stillwaiting = True
+                        'need to limit this to players who have not already gotten the word right
+                        If (p.guess = "" AndAlso p.roundresult(roundnum - 1) < 1) OrElse p.guess = "@@@@@" Then stillwaiting = True
                     Next
                     If Not stillwaiting Then Me.Invoke(Sub() Button1.PerformClick())
                 Else
@@ -211,12 +228,17 @@ Public Class Form1
         End Select
     End Sub
 
-    Private Sub sendfeedback(username As String, client As TwitchClient)
+    Private Sub sendfeedback(username As String, client As TwitchClient, mode As String)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
             Dim p As Player = players.Find(match)
-            p.setfeedback()
-            client.SendWhisper(username, p.feedback)
+            p.setfeedback(mode)
+            Select Case mode
+                Case "whisper"
+                    client.SendWhisper(username, p.feedback)
+                Case "chat"
+                    client.SendMessage(channel, p.feedback)
+            End Select
         End If
     End Sub
 
@@ -271,14 +293,14 @@ Public Class Form1
         Next
         drawalluserresults()
 
-        If numballs = 6 Then numballs = 5
-        If beenguessed Then numballs -= 1
-        If numballs >= 2 Then
+        If numballs = 6 * ballmultiplier Then numballs = 5 * ballmultiplier
+        If beenguessed Then numballs -= 1 * ballmultiplier
+        If numballs >= 2 * ballmultiplier Then
             While client.JoinedChannels.Count = 0
                 client.Connect()
                 Threading.Thread.Sleep(5000)
             End While
-            Me.Invoke(Sub() client.SendMessage(client.JoinedChannels(0), "Time's up!  You now have 45 seconds to look at your feedback.  To see this at any time, whisper !feedback to KourageTheCowardlyBot."))
+            Me.Invoke(Sub() client.SendMessage(client.JoinedChannels(0), "Time's up!  You now have 45 seconds to look at your feedback.  To see this at any time, type !feedback in chat."))
             gametime = 45
             gametimer.Start()
         Else
@@ -356,7 +378,7 @@ Public Class Form1
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         roundnum += 1
         gamemode = GameModes.guessing
-        numballs = 6
+        numballs = 6 * ballmultiplier
         For Each p As Player In players
             p.updategraphic("     ", False)
             p.guess = ""
@@ -483,8 +505,15 @@ Public Class Form1
                 Case False
             End Select
         ElseIf e.Button = MouseButtons.Left Then
-            Dim newscore As Integer = CInt(InputBox("Update score"))
-            updatescore(username, newscore)
+            Dim temp As String = InputBox("Update Score")
+            If temp <> "" Then
+                Try
+                    Dim newscore As Integer = CInt(temp)
+                    updatescore(username, newscore)
+                Catch
+                    MsgBox("Score must be a number.")
+                End Try
+            End If
         End If
     End Sub
 
@@ -550,7 +579,24 @@ Public Class Form1
         End If
     End Sub
 
+    Private Sub TextBox1_TextChanged(sender As Object, e As EventArgs) Handles TextBox1.TextChanged
+
+    End Sub
+
     Private Sub Form1_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
         dumpdata()
+    End Sub
+
+    Private Sub Button9_Click(sender As Object, e As EventArgs) Handles Button9.Click
+        If MsgBox("This mode cannot be disabled.  Are you sure?", MsgBoxStyle.YesNo, "Enable 2x Ball Mode") = 7 Then Exit Sub
+        ballmultiplier = 2
+        Button9.Enabled = False
+        Me.Invoke(Sub() client.SendMessage(client.JoinedChannels(0), "Hold your hats everyone, now we're playing for DOUBLE BALLS!"))
+    End Sub
+
+    Private Sub TextBox1_KeyDown(sender As Object, e As KeyEventArgs) Handles TextBox1.KeyDown
+        If e.KeyCode = Keys.Return Then
+            Label4.Text = TextBox1.Text.ToUpper()
+        End If
     End Sub
 End Class

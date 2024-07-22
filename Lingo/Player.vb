@@ -19,7 +19,7 @@ Public Class Player
         Me.Name = username
         Me.Balls = 0
         Me.guess = "@@@@@"
-        Me.roundresult = {0, 0, 0, 0, 0, 0, 0, 0}
+        Me.roundresult = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
         Me.feedback = ""
         Me.hasnotes = False
         If Me.Name.ToUpper() = My.Settings.champion.ToUpper() Then Me.ischamp = True Else Me.ischamp = False
@@ -106,23 +106,43 @@ Public Class Player
         End Using
         Me.graphic = b
     End Sub
-    Friend Sub setfeedback()
-        Dim outputstring As String = "Previous guesses: "
-        For Each g As String In Me.allguesses
-            If g <> "" Then
-                Select Case Form1.wordlist.Contains(g.ToUpper())
-                    Case True
-                        Dim temp As String = Form1.getLingoResult(Form1.Label4.Text, g)
-                        temp = temp.Replace("!", "🔲")
-                        temp = temp.Replace("?", "◯")
-                        temp = temp.Replace("/", "☒")
-                        outputstring += g.ToUpper + " - " + temp + "     "
-                    Case False
-                        outputstring += g.ToUpper + " - " + "NOT A WORD" + "     "
-                End Select
-
-            End If
-        Next
-        Me.feedback = outputstring
+    Friend Sub setfeedback(ByVal mode As String)
+        Try
+            Select Case mode
+                Case "whisper"
+                    Dim outputstring As String = "Previous guesses: "
+                    For Each g As String In Me.allguesses
+                        If g <> "" Then
+                            Select Case Form1.wordlist.Contains(g.ToUpper())
+                                Case True
+                                    Dim temp As String = Form1.getLingoResult(Form1.Label4.Text, g)
+                                    temp = temp.Replace("!", "🔲")
+                                    temp = temp.Replace("?", "◯")
+                                    temp = temp.Replace("/", "☒")
+                                    outputstring += g.ToUpper + " - " + temp + "     "
+                                Case False
+                                    outputstring += g.ToUpper + " - " + "NOT A WORD" + "     "
+                            End Select
+                        End If
+                    Next
+                    Me.feedback = outputstring
+                Case "chat"
+                    Dim outputstring As String = Me.Name + ", " + "your last on-screen feedback was: "
+                    Dim g As String = Me.allguesses.Last
+                    Select Case Form1.wordlist.Contains(g.ToUpper())
+                        Case True
+                            Dim temp As String = Form1.getLingoResult(Form1.Label4.Text, g)
+                            temp = temp.Replace("!", "🔲")
+                            temp = temp.Replace("?", "◯")
+                            temp = temp.Replace("/", "☒")
+                            outputstring += temp
+                        Case False
+                            outputstring += "NOT A WORD"
+                    End Select
+                    Me.feedback = outputstring
+            End Select
+        Catch
+            'no feedback, most likely
+        End Try
     End Sub
 End Class
