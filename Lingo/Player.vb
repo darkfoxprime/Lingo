@@ -106,43 +106,27 @@ Public Class Player
         End Using
         Me.graphic = b
     End Sub
-    Friend Sub setfeedback(ByVal mode As String)
-        Try
-            Select Case mode
-                Case "whisper"
-                    Dim outputstring As String = "Previous guesses: "
-                    For Each g As String In Me.allguesses
-                        If g <> "" Then
-                            Select Case Form1.wordlist.Contains(g.ToUpper())
-                                Case True
-                                    Dim temp As String = Form1.getLingoResult(Form1.Label4.Text, g)
-                                    temp = temp.Replace("!", "🔲")
-                                    temp = temp.Replace("?", "◯")
-                                    temp = temp.Replace("/", "☒")
-                                    outputstring += g.ToUpper + " - " + temp + "     "
-                                Case False
-                                    outputstring += g.ToUpper + " - " + "NOT A WORD" + "     "
-                            End Select
-                        End If
-                    Next
-                    Me.feedback = outputstring
-                Case "chat"
-                    Dim outputstring As String = Me.Name + ", " + "your last on-screen feedback was: "
-                    Dim g As String = Me.allguesses.Last
-                    Select Case Form1.wordlist.Contains(g.ToUpper())
-                        Case True
-                            Dim temp As String = Form1.getLingoResult(Form1.Label4.Text, g)
-                            temp = temp.Replace("!", "🔲")
-                            temp = temp.Replace("?", "◯")
-                            temp = temp.Replace("/", "☒")
-                            outputstring += temp
-                        Case False
-                            outputstring += "NOT A WORD"
-                    End Select
-                    Me.feedback = outputstring
-            End Select
-        Catch
-            'no feedback, most likely
-        End Try
+
+    Private Function FeedbackForGuess(guess As String)
+        If Form1.wordlist.Contains(guess.ToUpper) Then
+            Return Form1.getLingoResult(Form1.Label4.Text, guess).Replace("!", "🔲").Replace("?", "◯").Replace("/", "☒")
+        Else
+            Return "NOT A WORD"
+        End If
+    End Function
+
+    Friend Sub setfeedback(includeAllGuesses As Boolean)
+        Dim outputstring As String
+        If includeAllGuesses Then
+            outputstring = "Previous guesses: "
+            For Each guess As String In Me.allguesses
+                If guess <> "" Then
+                    outputstring += guess.ToUpper + " - " + FeedbackForGuess(guess) + "     "
+                End If
+            Next
+        Else
+            outputstring = Me.Name + ", " + "your last on-screen feedback was: " + FeedbackForGuess(Me.allguesses.Last)
+        End If
+        Me.feedback = outputstring
     End Sub
 End Class

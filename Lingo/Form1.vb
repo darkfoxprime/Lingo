@@ -107,6 +107,14 @@ Public Class Form1
         Me.Invoke(Sub() Me.TwitchReceivedMessage(e.WhisperMessage.Message, e.WhisperMessage.Username, MessageModes.whisper))
     End Sub
 
+    Private Sub Twitch_SendMessageToUser(receiver As String, message As String)
+        client.SendWhisper(receiver, message)
+    End Sub
+
+    Private Sub Twitch_SendMessageToChannel(receiver As String, message As String)
+        client.SendMessage(receiver, message)
+    End Sub
+
 
 
     ' UI and application logic
@@ -267,12 +275,13 @@ Public Class Form1
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
             Dim p As Player = players.Find(match)
-            p.setfeedback(mode)
             Select Case mode
                 Case MessageModes.whisper
-                    client.SendWhisper(username, p.feedback)
+                    p.setfeedback(True)
+                    Twitch_SendMessageToUser(username, p.feedback)
                 Case MessageModes.chat
-                    client.SendMessage(channel, p.feedback)
+                    p.setfeedback(False)
+                    Twitch_SendMessageToChannel(channel, p.feedback)
             End Select
         End If
     End Sub
