@@ -48,13 +48,18 @@ Public Class Form1
 
 
 
+    Enum MessageModes
+        chat
+        whisper
+    End Enum
+
     Private Sub Twitch_Connect(botUsername As String, botOauth As String, channel As String)
         Dim credentials As New ConnectionCredentials(botUsername, botOauth)
         client = New TwitchClient()
         client.Initialize(credentials, channel)
         AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
-        AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
-        AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
+        AddHandler client.OnMessageReceived, AddressOf Twitch_OnMessageReceived
+        AddHandler client.OnWhisperReceived, AddressOf Twitch_OnWhisperReceived
         AddHandler client.OnConnected, AddressOf Twitch_Client_OnConnected
         AddHandler client.OnDisconnected, AddressOf Twitch_OnDisconnected
         AddHandler client.OnReconnected, AddressOf Twitch_OnReconnected
@@ -90,6 +95,15 @@ Public Class Form1
     End Sub
 
 
+    Private Sub Twitch_OnMessageReceived(ByVal sender As Object, ByVal e As OnMessageReceivedArgs)
+        Me.Invoke(Sub() Me.TwitchReceivedMessage(e.ChatMessage.Message, e.ChatMessage.Username, MessageModes.chat))
+    End Sub
+
+    Private Sub Twitch_OnWhisperReceived(ByVal sender As Object, ByVal e As OnWhisperReceivedArgs)
+        Me.Invoke(Sub() Me.TwitchReceivedMessage(e.WhisperMessage.Message, e.WhisperMessage.Username, MessageModes.whisper))
+    End Sub
+
+
 
     ' UI and application logic
 
@@ -108,6 +122,58 @@ Public Class Form1
         Else
             Me.Invoke(Sub() TextBox2.Text = status)
         End If
+    End Sub
+
+    Private Sub TwitchReceivedMessage(message As String, fromUser As String, Optional howReceived As MessageModes = MessageModes.chat)
+        Select Case True
+            Case message.ToLower = "!in"
+                'client.SendWhisper(e.WhisperMessage.Username, "Your entry is confirmed.")
+                Me.Invoke(Sub() registerplayer(fromUser))
+            Case message.ToLower = "!out"
+                Me.Invoke(Sub() unregisterplayer(fromUser))
+            Case message.ToLower = "!feedback"
+                Me.Invoke(Sub() sendfeedback(fromUser, client, howReceived))
+            Case gamemode = GameModes.guessing And howReceived = MessageModes.whisper
+                If System.Text.RegularExpressions.Regex.IsMatch(message, "^[A-Za-z]{5}$") Then
+                    Me.Invoke(Sub() updateplayerguess(fromUser, message))
+                    Me.Invoke(Sub() lockinplayerguess(fromUser))
+                    Dim stillwaiting As Boolean = False
+                    For Each p As Player In players
+                        'need to limit this to players who have not already gotten the word right
+                        If (p.guess = "" AndAlso p.roundresult(roundnum - 1) < 1) OrElse p.guess = "@@@@@" Then stillwaiting = True
+                    Next
+                    If Not stillwaiting Then Me.Invoke(Sub() Button1.PerformClick())
+                Else
+                    Me.Invoke(Sub() updateplayernotes(fromUser, message))
+                End If
+                'Case gamemode = GameModes.results
+                '    Dim match As Predicate(Of Player) = Function(pl) pl.Name = e.WhisperMessage.Username
+                '    If players.Exists(match) Then
+                '        Dim p As Player = players.Find(match)
+                '        If p.guess = "" Then
+                '            If System.Text.RegularExpressions.Regex.IsMatch(e.WhisperMessage.Message, "^[A-Za-z]{5}$") Then
+                '                Me.Invoke(Sub() updateplayerguess(e.WhisperMessage.Username, e.WhisperMessage.Message))
+                '                Me.Invoke(Sub() lockinplayerguess(e.WhisperMessage.Username))
+
+                '                Dim beenguessed As Boolean = False
+                '                If wordlist.Contains(p.guess.ToUpper) AndAlso p.roundresult(roundnum - 1) = 0 Then
+                '                        p.updategraphic(getLingoResult(Label4.Text, p.guess))
+                '                    ElseIf p.guess <> "@@@@@" AndAlso p.roundresult(roundnum - 1) = 0 Then
+                '                        If p.guess = "" Then p.updategraphic("     ") Else p.updategraphic("\\\\\")
+                '                    End If
+                '                    If beenguessed = False AndAlso p.roundresult(roundnum - 1) >= 1 Then beenguessed = True
+                '                p.allguesses.Add(p.guess)
+                '                drawalluserresults()
+
+                '            Else
+                '                Me.Invoke(Sub() updateplayernotes(e.WhisperMessage.Username, e.WhisperMessage.Message))
+                '            End If
+                '        End If
+                '    End If
+            Case howReceived = MessageModes.whisper
+                Me.Invoke(Sub() updateplayernotes(fromUser, message))
+        End Select
+
     End Sub
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
@@ -150,23 +216,6 @@ Public Class Form1
         client.SendMessage(e.Channel, "Lingo is LIVE!  To sign up: Using either the Twitch chat or a whisper to KourageTheCowardlyBot, type the word '!in'!")
         If gamemode = Nothing Then gamemode = GameModes.registration
     End Sub
-    Private Sub OnMessageReceived(ByVal sender As Object, ByVal e As OnMessageReceivedArgs)
-        Select Case True
-            Case e.ChatMessage.Message.ToLower = "!in"
-                Me.Invoke(Sub() registerplayer(e.ChatMessage.Username))
-            Case e.ChatMessage.Message.ToLower = "!out"
-                Me.Invoke(Sub() unregisterplayer(e.ChatMessage.Username))
-                'Case gamemode = GameModes.guessing
-                '    If System.Text.RegularExpressions.Regex.IsMatch(e.ChatMessage.Message, "^[A-Za-z]{5}$") Then
-                '        client.SendMessage(e.ChatMessage.Channel, "/delete " + e.ChatMessage.Id)
-                '        Me.Invoke(Sub() updateplayerguess(e.ChatMessage.Username, e.ChatMessage.Message))
-                '        Me.Invoke(Sub() lockinplayerguess(e.ChatMessage.Username))
-                '    End If
-            Case e.ChatMessage.Message.ToLower = "!feedback"
-                Me.Invoke(Sub() sendfeedback(e.ChatMessage.Username, client, "chat"))
-        End Select
-    End Sub
-
     Private Sub registerplayer(username As String)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then Exit Sub
@@ -177,6 +226,7 @@ Public Class Form1
         ListBox2.Items.Add(username + " - ")
         ListBox3.Items.Add(username + " - ")
     End Sub
+
     Private Sub unregisterplayer(username As String)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
@@ -187,6 +237,7 @@ Public Class Form1
         ListBox2.Items.Remove(username + " - ")
         ListBox3.Items.Remove(username + " - ")
     End Sub
+
     Private Sub updatescore(username As String, score As Integer)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
@@ -197,66 +248,15 @@ Public Class Form1
         End If
     End Sub
 
-    Private Sub OnWhisperReceived(ByVal sender As Object, ByVal e As OnWhisperReceivedArgs)
-        Select Case True
-            Case e.WhisperMessage.Message.ToLower = "!in"
-                'client.SendWhisper(e.WhisperMessage.Username, "Your entry is confirmed.")
-                Me.Invoke(Sub() registerplayer(e.WhisperMessage.Username))
-            Case e.WhisperMessage.Message.ToLower = "!out"
-                Me.Invoke(Sub() unregisterplayer(e.WhisperMessage.Username))
-            Case e.WhisperMessage.Message.ToLower = "!feedback"
-                Me.Invoke(Sub() sendfeedback(e.WhisperMessage.Username, client, "whisper"))
-            Case gamemode = GameModes.guessing
-                If System.Text.RegularExpressions.Regex.IsMatch(e.WhisperMessage.Message, "^[A-Za-z]{5}$") Then
-                    Me.Invoke(Sub() updateplayerguess(e.WhisperMessage.Username, e.WhisperMessage.Message))
-                    Me.Invoke(Sub() lockinplayerguess(e.WhisperMessage.Username))
-                    Dim stillwaiting As Boolean = False
-                    For Each p As Player In players
-                        'need to limit this to players who have not already gotten the word right
-                        If (p.guess = "" AndAlso p.roundresult(roundnum - 1) < 1) OrElse p.guess = "@@@@@" Then stillwaiting = True
-                    Next
-                    If Not stillwaiting Then Me.Invoke(Sub() Button1.PerformClick())
-                Else
-                    Me.Invoke(Sub() updateplayernotes(e.WhisperMessage.Username, e.WhisperMessage.Message))
-                End If
-                'Case gamemode = GameModes.results
-                '    Dim match As Predicate(Of Player) = Function(pl) pl.Name = e.WhisperMessage.Username
-                '    If players.Exists(match) Then
-                '        Dim p As Player = players.Find(match)
-                '        If p.guess = "" Then
-                '            If System.Text.RegularExpressions.Regex.IsMatch(e.WhisperMessage.Message, "^[A-Za-z]{5}$") Then
-                '                Me.Invoke(Sub() updateplayerguess(e.WhisperMessage.Username, e.WhisperMessage.Message))
-                '                Me.Invoke(Sub() lockinplayerguess(e.WhisperMessage.Username))
-
-                '                Dim beenguessed As Boolean = False
-                '                If wordlist.Contains(p.guess.ToUpper) AndAlso p.roundresult(roundnum - 1) = 0 Then
-                '                        p.updategraphic(getLingoResult(Label4.Text, p.guess))
-                '                    ElseIf p.guess <> "@@@@@" AndAlso p.roundresult(roundnum - 1) = 0 Then
-                '                        If p.guess = "" Then p.updategraphic("     ") Else p.updategraphic("\\\\\")
-                '                    End If
-                '                    If beenguessed = False AndAlso p.roundresult(roundnum - 1) >= 1 Then beenguessed = True
-                '                p.allguesses.Add(p.guess)
-                '                drawalluserresults()
-
-                '            Else
-                '                Me.Invoke(Sub() updateplayernotes(e.WhisperMessage.Username, e.WhisperMessage.Message))
-                '            End If
-                '        End If
-                '    End If
-            Case Else
-                Me.Invoke(Sub() updateplayernotes(e.WhisperMessage.Username, e.WhisperMessage.Message))
-        End Select
-    End Sub
-
-    Private Sub sendfeedback(username As String, client As TwitchClient, mode As String)
+    Private Sub sendfeedback(username As String, client As TwitchClient, mode As MessageModes)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
             Dim p As Player = players.Find(match)
             p.setfeedback(mode)
             Select Case mode
-                Case "whisper"
+                Case MessageModes.whisper
                     client.SendWhisper(username, p.feedback)
-                Case "chat"
+                Case MessageModes.chat
                     client.SendMessage(channel, p.feedback)
             End Select
         End If
@@ -284,6 +284,7 @@ Public Class Form1
             Next
         End If
     End Sub
+
     Private Sub updateplayernotes(username As String, message As String)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
@@ -378,12 +379,14 @@ Public Class Form1
             g.DrawImage(My.Resources.hack2, 0, 0)
         End Using
     End Sub
+
     Private Sub drawuserresult(p As Player)
         Using g As Graphics = PublicDisplay.PictureBox1.CreateGraphics
             g.DrawImage(p.graphic, p.position.X, p.position.Y, p.size.Width, p.size.Height)
             'PublicDisplay.PictureBox1.Invalidate(New Rectangle(p.position.X, p.position.Y, p.size.Width, p.size.Height))
         End Using
     End Sub
+
     Private Sub ListBox1_MouseDoubleClick(sender As Object, e As MouseEventArgs) Handles ListBox1.MouseDoubleClick
         Label4.Text = ListBox1.SelectedItem
     End Sub
@@ -395,6 +398,7 @@ Public Class Form1
 
         End If
     End Sub
+
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         roundnum += 1
         gamemode = GameModes.guessing
