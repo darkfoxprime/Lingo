@@ -29,12 +29,56 @@ Public Class Form1
     Public ballmultiplier As Integer = 1
     Dim channel As String
 
+
+
+    ' Private classes and types
+
+
+
     Enum GameModes
         registration
         guessing
         waiting
         results
     End Enum
+
+
+
+    ' Twitch connection logic
+
+
+
+    Private Sub Twitch_Connect(botUsername As String, botOauth As String, channel As String)
+        Dim credentials As New ConnectionCredentials(botUsername, botOauth)
+        client = New TwitchClient()
+        client.Initialize(credentials, channel)
+        AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
+        AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
+        AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
+        AddHandler client.OnConnected, AddressOf Client_OnConnected
+        AddHandler client.OnDisconnected, AddressOf Client_OnDisconnected
+        AddHandler client.OnReconnected, AddressOf Client_OnReconnected
+        AddHandler client.OnLeftChannel, AddressOf Client_onLeftChannel
+        AddHandler client.OnError, AddressOf Client_onError
+        Try
+            client.Connect()
+        Catch
+            Me.Invoke(Sub() Me.TwitchConnectionFailed("Can't connect to Twitch.  Close and try again."))
+        End Try
+    End Sub
+
+
+
+    ' UI and application logic
+
+
+
+    Private Sub TwitchConnectionFailed(reason As String)
+        MsgBox(reason)
+        Me.Invoke(Sub() dumpdata())
+        Me.Invoke(Sub() Me.Close())
+    End Sub
+
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
         If My.Settings.channel = "" Then
             channel = InputBox("What is the name of your channel?  Omit the 'twitch.tv/' part.")
@@ -49,24 +93,9 @@ Public Class Form1
         For i As Integer = 0 To 999
             ListBox1.Items.Add(wordlist(r.Next(wordlist.Count - 1)))
         Next
-        Dim credentials As New ConnectionCredentials("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym")
-        client = New TwitchClient()
-        client.Initialize(credentials, channel)
-        AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
-        AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
-        AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
-        AddHandler client.OnConnected, AddressOf Client_OnConnected
-        AddHandler client.OnDisconnected, AddressOf Client_OnDisconnected
-        AddHandler client.OnReconnected, AddressOf Client_OnReconnected
-        AddHandler client.OnLeftChannel, AddressOf Client_onLeftChannel
-        AddHandler client.OnError, AddressOf Client_onError
-        Try
-            client.Connect()
-        Catch
-            MsgBox("Can't connect.  Close and try again.")
-            Me.Invoke(Sub() dumpdata())
-            Me.Invoke(Sub() Me.Close())
-        End Try
+
+        Twitch_Connect("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym", channel)
+
         Dim screennumber As Integer = 0
         If My.Settings.screennumber = -1 Then
             screennumber = InputBox("Which monitor should the public display use?  Typically, 0 is your 'main' display and 1,2,etc. are additional displays.  It is recommended to have the public display set up on a separate monitor from your main one.")
@@ -99,24 +128,8 @@ Public Class Form1
     Private Sub Client_OnDisconnected(ByVal sender As Object, ByVal e As OnDisconnectedEventArgs)
         Me.Invoke(Sub() TextBox2.Text = "Disconnected")
         Debug.WriteLine("Disconnected")
-        Dim credentials As New ConnectionCredentials("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym")
-        'Dim credentials As New ConnectionCredentials("liquid_kourage", "j1kiijo0ymyef61xq6nbvr9jsw7f7i")
-        client = New TwitchClient()
-        client.Initialize(credentials, channel)
-        AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
-        AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
-        AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
-        AddHandler client.OnConnected, AddressOf Client_OnConnected
-        AddHandler client.OnDisconnected, AddressOf Client_OnDisconnected
-        AddHandler client.OnReconnected, AddressOf Client_OnReconnected
-        AddHandler client.OnLeftChannel, AddressOf Client_onLeftChannel
-        Try
-            client.Connect()
-        Catch
-            MsgBox("Can't connect.  Close and try again.")
-            Me.Invoke(Sub() dumpdata())
-            Me.Invoke(Sub() Me.Close())
-        End Try
+
+        Twitch_Connect(client.ConnectionCredentials.TwitchUsername, client.ConnectionCredentials.TwitchOauth, client.JoinedChannels)
     End Sub
 
     Private Sub dumpdata()
