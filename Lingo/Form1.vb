@@ -55,16 +55,38 @@ Public Class Form1
         AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
         AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
         AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
-        AddHandler client.OnConnected, AddressOf Client_OnConnected
-        AddHandler client.OnDisconnected, AddressOf Client_OnDisconnected
-        AddHandler client.OnReconnected, AddressOf Client_OnReconnected
-        AddHandler client.OnLeftChannel, AddressOf Client_onLeftChannel
-        AddHandler client.OnError, AddressOf Client_onError
+        AddHandler client.OnConnected, AddressOf Twitch_Client_OnConnected
+        AddHandler client.OnDisconnected, AddressOf Twitch_OnDisconnected
+        AddHandler client.OnReconnected, AddressOf Twitch_OnReconnected
+        AddHandler client.OnLeftChannel, AddressOf Twitch_onLeftChannel
+        AddHandler client.OnError, AddressOf Twitch_onError
         Try
             client.Connect()
         Catch
             Me.Invoke(Sub() Me.TwitchConnectionFailed("Can't connect to Twitch.  Close and try again."))
         End Try
+    End Sub
+
+    Private Sub Twitch_onError(sender As Object, e As OnErrorEventArgs)
+        Debug.WriteLine(e.Exception.Message)
+    End Sub
+
+    Private Sub Twitch_onLeftChannel(sender As Object, e As OnLeftChannelArgs)
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Left Channel"))
+    End Sub
+
+    Private Sub Twitch_Client_OnConnected(ByVal sender As Object, ByVal e As OnConnectedArgs)
+        Debug.WriteLine($"Connected to {e.AutoJoinChannel}")
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Connected"))
+    End Sub
+
+    Private Sub Twitch_OnReconnected(ByVal sender As Object, ByVal e As OnReconnectedEventArgs)
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Reconnected"))
+    End Sub
+
+    Private Sub Twitch_OnDisconnected(ByVal sender As Object, ByVal e As OnDisconnectedEventArgs)
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Disconnected"))
+        Twitch_Connect(client.ConnectionCredentials.TwitchUsername, client.ConnectionCredentials.TwitchOAuth, client.JoinedChannels.First.Channel)
     End Sub
 
 
@@ -77,6 +99,15 @@ Public Class Form1
         MsgBox(reason)
         Me.Invoke(Sub() dumpdata())
         Me.Invoke(Sub() Me.Close())
+    End Sub
+
+    Private Sub TwitchConnectionStatusChanged(status As String)
+        Debug.WriteLine(status)
+        If status.ToLower.Contains("channel") Then
+            Me.Invoke(Sub() TextBox3.Text = status)
+        Else
+            Me.Invoke(Sub() TextBox2.Text = status)
+        End If
     End Sub
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
@@ -106,30 +137,6 @@ Public Class Form1
         PublicDisplay.Location = Screen.AllScreens(screennumber).Bounds.Location
         PublicDisplay.Size = Screen.AllScreens(screennumber).Bounds.Size
         PublicDisplay.Show()
-    End Sub
-
-    Private Sub Client_onError(sender As Object, e As OnErrorEventArgs)
-        Debug.WriteLine(e.Exception.Message)
-    End Sub
-
-    Private Sub Client_onLeftChannel(sender As Object, e As OnLeftChannelArgs)
-        Me.Invoke(Sub() TextBox3.Text = "Left Channel")
-    End Sub
-
-    Private Sub Client_OnConnected(ByVal sender As Object, ByVal e As OnConnectedArgs)
-        Debug.WriteLine($"Connected to {e.AutoJoinChannel}")
-        Me.Invoke(Sub() TextBox2.Text = "Connected")
-        Debug.WriteLine("Connected")
-    End Sub
-    Private Sub Client_OnReconnected(ByVal sender As Object, ByVal e As OnReconnectedEventArgs)
-        Me.Invoke(Sub() TextBox2.Text = "Reconnected")
-        Debug.WriteLine("Reconnected")
-    End Sub
-    Private Sub Client_OnDisconnected(ByVal sender As Object, ByVal e As OnDisconnectedEventArgs)
-        Me.Invoke(Sub() TextBox2.Text = "Disconnected")
-        Debug.WriteLine("Disconnected")
-
-        Twitch_Connect(client.ConnectionCredentials.TwitchUsername, client.ConnectionCredentials.TwitchOauth, client.JoinedChannels)
     End Sub
 
     Private Sub dumpdata()
