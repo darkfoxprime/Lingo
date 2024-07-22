@@ -27,7 +27,6 @@ Public Class Form1
     Public numballs As Integer = 0
     Public roundnum As Integer = 0
     Public ballmultiplier As Integer = 1
-    Dim channel As String
 
 
 
@@ -204,12 +203,18 @@ Public Class Form1
     End Sub
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
-        If My.Settings.channel = "" Then
-            channel = InputBox("What is the name of your channel?  Omit the 'twitch.tv/' part.")
-            My.Settings.channel = channel
-        Else
-            channel = My.Settings.channel
+        If My.Settings.twitch_channel = "" Then
+            My.Settings.twitch_channel = InputBox("What is the name of your Twitch channel?  Omit the 'twitch.tv/' part.")
         End If
+
+        If My.Settings.twitch_username = "" Then
+            My.Settings.twitch_username = InputBox("What Twitch username should I log in to?")
+        End If
+
+        If My.Settings.twitch_oauth = "" Then
+            My.Settings.twitch_bot_oath = InputBox("What Twitch OAuth Token should I use to log in?")
+        End If
+
         gametimer = New Timer(1000)
         AddHandler gametimer.Elapsed, New ElapsedEventHandler(AddressOf GameTimer_Tick)
         wordlist = My.Resources.LingoWords.Split(vbCrLf.ToCharArray, StringSplitOptions.RemoveEmptyEntries).ToList
@@ -218,7 +223,8 @@ Public Class Form1
             ListBox1.Items.Add(wordlist(r.Next(wordlist.Count - 1)))
         Next
 
-        Twitch_Connect("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym", channel)
+        ' Twitch_Connect("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym", channel)
+        Twitch_Connect(My.Settings.twitch_username, My.Settings.twitch_oauth, My.Settings.twitch_channel)
 
         Dim screennumber As Integer = 0
         If My.Settings.screennumber = -1 Then
@@ -281,7 +287,7 @@ Public Class Form1
                     Twitch_SendMessageToUser(username, p.feedback)
                 Case MessageModes.chat
                     p.setfeedback(False)
-                    Twitch_SendMessageToChannel(channel, p.feedback)
+                    Twitch_SendMessageToChannel(My.Settings.twitch_channel, p.feedback)
             End Select
         End If
     End Sub
