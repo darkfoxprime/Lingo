@@ -57,7 +57,7 @@ Public Class Form1
         Dim credentials As New ConnectionCredentials(botUsername, botOauth)
         client = New TwitchClient()
         client.Initialize(credentials, channel)
-        AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
+        AddHandler client.OnJoinedChannel, AddressOf Twitch_OnJoinedChannel
         AddHandler client.OnMessageReceived, AddressOf Twitch_OnMessageReceived
         AddHandler client.OnWhisperReceived, AddressOf Twitch_OnWhisperReceived
         AddHandler client.OnConnected, AddressOf Twitch_Client_OnConnected
@@ -94,6 +94,10 @@ Public Class Form1
         Twitch_Connect(client.ConnectionCredentials.TwitchUsername, client.ConnectionCredentials.TwitchOAuth, client.JoinedChannels.First.Channel)
     End Sub
 
+    Private Sub Twitch_OnJoinedChannel(ByVal sender As Object, ByVal e As OnJoinedChannelArgs)
+        client.SendMessage(e.Channel, "Lingo is LIVE!  To sign up: Using either the Twitch chat or a whisper to KourageTheCowardlyBot, type the word '!in'!")
+        ChangeGameModeTo(GameModes.registration, New GameModes() {Nothing})
+    End Sub
 
     Private Sub Twitch_OnMessageReceived(ByVal sender As Object, ByVal e As OnMessageReceivedArgs)
         Me.Invoke(Sub() Me.TwitchReceivedMessage(e.ChatMessage.Message, e.ChatMessage.Username, MessageModes.chat))
@@ -173,7 +177,22 @@ Public Class Form1
             Case howReceived = MessageModes.whisper
                 Me.Invoke(Sub() updateplayernotes(fromUser, message))
         End Select
+    End Sub
 
+    ' Change the game mode to `new_gamemode` but only if the current
+    ' game mode is in `only_from_gamemodes`
+    Private Sub ChangeGameModeTo(new_gamemode As GameModes, only_from_gamemodes As GameModes())
+        If only_from_gamemodes.Contains(gamemode) Then
+            ChangeGameModeTo(new_gamemode)
+        End If
+    End Sub
+
+    ' Change the game mode to `new_gamemode` (if it's not already that mode)
+    Private Sub ChangeGameModeTo(new_gamemode As GameModes)
+        If gamemode <> new_gamemode Then
+            ' Debug.WriteLine($"Switching game mode from {gamemode} to {new_gamemode}")
+            gamemode = new_gamemode
+        End If
     End Sub
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
@@ -212,10 +231,6 @@ Public Class Form1
         stream.Close()
     End Sub
 
-    Private Sub OnJoinedChannel(ByVal sender As Object, ByVal e As OnJoinedChannelArgs)
-        client.SendMessage(e.Channel, "Lingo is LIVE!  To sign up: Using either the Twitch chat or a whisper to KourageTheCowardlyBot, type the word '!in'!")
-        If gamemode = Nothing Then gamemode = GameModes.registration
-    End Sub
     Private Sub registerplayer(username As String)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then Exit Sub
@@ -301,7 +316,7 @@ Public Class Form1
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        gamemode = GameModes.results
+        ChangeGameModeTo(GameModes.results)
         Dim beenguessed As Boolean = False
         For Each p As Player In players
             If wordlist.Contains(p.guess.ToUpper) AndAlso p.roundresult(roundnum - 1) = 0 Then
@@ -401,7 +416,7 @@ Public Class Form1
 
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         roundnum += 1
-        gamemode = GameModes.guessing
+        ChangeGameModeTo(GameModes.guessing)
         numballs = 6 * ballmultiplier
         For Each p As Player In players
             p.updategraphic("     ", False)
@@ -422,7 +437,7 @@ Public Class Form1
     End Sub
 
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
-        gamemode = GameModes.guessing
+        ChangeGameModeTo(GameModes.guessing)
         For Each p As Player In players
             p.guess = ""
             p.updategraphic("     ", False)
