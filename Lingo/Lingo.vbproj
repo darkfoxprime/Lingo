@@ -193,6 +193,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IChatBot.vb" />
+    <Compile Include="TwitchBot.vb" />
     <Compile Include="Form1.vb">
       <SubType>Form</SubType>
     </Compile>
