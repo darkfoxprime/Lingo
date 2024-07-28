@@ -14,8 +14,11 @@
     <Setting Name="twitch_username" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
-    <Setting Name="twitch_oauth" Type="System.String" Scope="User">
+    <Setting Name="twitch_oauth_token" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="twitch_bot_owner" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Liquid_Kourage</Value>
     </Setting>
   </Settings>
 </SettingsFile>
