@@ -212,7 +212,7 @@ Public Class Form1
         End If
 
         If My.Settings.twitch_oauth = "" Then
-            My.Settings.twitch_bot_oath = InputBox("What Twitch OAuth Token should I use to log in?")
+            My.Settings.twitch_oauth = InputBox("What Twitch OAuth Token should I use to log in?")
         End If
 
         gametimer = New Timer(1000)
