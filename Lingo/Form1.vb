@@ -29,167 +29,126 @@ Public Class Form1
     Public ballmultiplier As Integer = 1
     Dim channel As String
 
+
+
+    ' Private classes and types
+
+
+
     Enum GameModes
         registration
         guessing
         waiting
         results
     End Enum
-    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
-        If My.Settings.channel = "" Then
-            channel = InputBox("What is the name of your channel?  Omit the 'twitch.tv/' part.")
-            My.Settings.channel = channel
-        Else
-            channel = My.Settings.channel
-        End If
-        gametimer = New Timer(1000)
-        AddHandler gametimer.Elapsed, New ElapsedEventHandler(AddressOf GameTimer_Tick)
-        wordlist = My.Resources.LingoWords.Split(vbCrLf.ToCharArray, StringSplitOptions.RemoveEmptyEntries).ToList
-        Dim r As New Random
-        For i As Integer = 0 To 999
-            ListBox1.Items.Add(wordlist(r.Next(wordlist.Count - 1)))
-        Next
-        Dim credentials As New ConnectionCredentials("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym")
+
+
+
+    ' Twitch connection logic
+
+
+
+    Enum MessageModes
+        chat
+        whisper
+    End Enum
+
+    Private Sub Twitch_Connect(botUsername As String, botOauth As String, channel As String)
+        Dim credentials As New ConnectionCredentials(botUsername, botOauth)
         client = New TwitchClient()
         client.Initialize(credentials, channel)
-        AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
-        AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
-        AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
-        AddHandler client.OnConnected, AddressOf Client_OnConnected
-        AddHandler client.OnDisconnected, AddressOf Client_OnDisconnected
-        AddHandler client.OnReconnected, AddressOf Client_OnReconnected
-        AddHandler client.OnLeftChannel, AddressOf Client_onLeftChannel
-        AddHandler client.OnError, AddressOf Client_onError
+        AddHandler client.OnJoinedChannel, AddressOf Twitch_OnJoinedChannel
+        AddHandler client.OnMessageReceived, AddressOf Twitch_OnMessageReceived
+        AddHandler client.OnWhisperReceived, AddressOf Twitch_OnWhisperReceived
+        AddHandler client.OnConnected, AddressOf Twitch_Client_OnConnected
+        AddHandler client.OnDisconnected, AddressOf Twitch_OnDisconnected
+        AddHandler client.OnReconnected, AddressOf Twitch_OnReconnected
+        AddHandler client.OnLeftChannel, AddressOf Twitch_onLeftChannel
+        AddHandler client.OnError, AddressOf Twitch_onError
         Try
             client.Connect()
         Catch
-            MsgBox("Can't connect.  Close and try again.")
-            Me.Invoke(Sub() dumpdata())
-            Me.Invoke(Sub() Me.Close())
+            Me.Invoke(Sub() Me.TwitchConnectionFailed("Can't connect to Twitch.  Close and try again."))
         End Try
-        Dim screennumber As Integer = 0
-        If My.Settings.screennumber = -1 Then
-            screennumber = InputBox("Which monitor should the public display use?  Typically, 0 is your 'main' display and 1,2,etc. are additional displays.  It is recommended to have the public display set up on a separate monitor from your main one.")
-            My.Settings.screennumber = screennumber
-        Else
-            screennumber = My.Settings.screennumber
-        End If
-        PublicDisplay.Location = Screen.AllScreens(screennumber).Bounds.Location
-        PublicDisplay.Size = Screen.AllScreens(screennumber).Bounds.Size
-        PublicDisplay.Show()
     End Sub
 
-    Private Sub Client_onError(sender As Object, e As OnErrorEventArgs)
+    Private Sub Twitch_onError(sender As Object, e As OnErrorEventArgs)
         Debug.WriteLine(e.Exception.Message)
     End Sub
 
-    Private Sub Client_onLeftChannel(sender As Object, e As OnLeftChannelArgs)
-        Me.Invoke(Sub() TextBox3.Text = "Left Channel")
+    Private Sub Twitch_onLeftChannel(sender As Object, e As OnLeftChannelArgs)
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Left Channel"))
     End Sub
 
-    Private Sub Client_OnConnected(ByVal sender As Object, ByVal e As OnConnectedArgs)
+    Private Sub Twitch_Client_OnConnected(ByVal sender As Object, ByVal e As OnConnectedArgs)
         Debug.WriteLine($"Connected to {e.AutoJoinChannel}")
-        Me.Invoke(Sub() TextBox2.Text = "Connected")
-        Debug.WriteLine("Connected")
-    End Sub
-    Private Sub Client_OnReconnected(ByVal sender As Object, ByVal e As OnReconnectedEventArgs)
-        Me.Invoke(Sub() TextBox2.Text = "Reconnected")
-        Debug.WriteLine("Reconnected")
-    End Sub
-    Private Sub Client_OnDisconnected(ByVal sender As Object, ByVal e As OnDisconnectedEventArgs)
-        Me.Invoke(Sub() TextBox2.Text = "Disconnected")
-        Debug.WriteLine("Disconnected")
-        Dim credentials As New ConnectionCredentials("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym")
-        'Dim credentials As New ConnectionCredentials("liquid_kourage", "j1kiijo0ymyef61xq6nbvr9jsw7f7i")
-        client = New TwitchClient()
-        client.Initialize(credentials, channel)
-        AddHandler client.OnJoinedChannel, AddressOf OnJoinedChannel
-        AddHandler client.OnMessageReceived, AddressOf OnMessageReceived
-        AddHandler client.OnWhisperReceived, AddressOf OnWhisperReceived
-        AddHandler client.OnConnected, AddressOf Client_OnConnected
-        AddHandler client.OnDisconnected, AddressOf Client_OnDisconnected
-        AddHandler client.OnReconnected, AddressOf Client_OnReconnected
-        AddHandler client.OnLeftChannel, AddressOf Client_onLeftChannel
-        Try
-            client.Connect()
-        Catch
-            MsgBox("Can't connect.  Close and try again.")
-            Me.Invoke(Sub() dumpdata())
-            Me.Invoke(Sub() Me.Close())
-        End Try
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Connected"))
     End Sub
 
-    Private Sub dumpdata()
-        Dim formatter As IFormatter = New BinaryFormatter()
-        Dim stream As Stream = New FileStream("lingosave.bin", FileMode.Create, FileAccess.Write, FileShare.None)
-        formatter.Serialize(stream, players)
-        stream.Close()
+    Private Sub Twitch_OnReconnected(ByVal sender As Object, ByVal e As OnReconnectedEventArgs)
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Reconnected"))
     End Sub
 
-    Private Sub OnJoinedChannel(ByVal sender As Object, ByVal e As OnJoinedChannelArgs)
+    Private Sub Twitch_OnDisconnected(ByVal sender As Object, ByVal e As OnDisconnectedEventArgs)
+        Me.Invoke(Sub() TwitchConnectionStatusChanged("Disconnected"))
+        Twitch_Connect(client.ConnectionCredentials.TwitchUsername, client.ConnectionCredentials.TwitchOAuth, client.JoinedChannels.First.Channel)
+    End Sub
+
+    Private Sub Twitch_OnJoinedChannel(ByVal sender As Object, ByVal e As OnJoinedChannelArgs)
         client.SendMessage(e.Channel, "Lingo is LIVE!  To sign up: Using either the Twitch chat or a whisper to KourageTheCowardlyBot, type the word '!in'!")
-        If gamemode = Nothing Then gamemode = GameModes.registration
-    End Sub
-    Private Sub OnMessageReceived(ByVal sender As Object, ByVal e As OnMessageReceivedArgs)
-        Select Case True
-            Case e.ChatMessage.Message.ToLower = "!in"
-                Me.Invoke(Sub() registerplayer(e.ChatMessage.Username))
-            Case e.ChatMessage.Message.ToLower = "!out"
-                Me.Invoke(Sub() unregisterplayer(e.ChatMessage.Username))
-                'Case gamemode = GameModes.guessing
-                '    If System.Text.RegularExpressions.Regex.IsMatch(e.ChatMessage.Message, "^[A-Za-z]{5}$") Then
-                '        client.SendMessage(e.ChatMessage.Channel, "/delete " + e.ChatMessage.Id)
-                '        Me.Invoke(Sub() updateplayerguess(e.ChatMessage.Username, e.ChatMessage.Message))
-                '        Me.Invoke(Sub() lockinplayerguess(e.ChatMessage.Username))
-                '    End If
-            Case e.ChatMessage.Message.ToLower = "!feedback"
-                Me.Invoke(Sub() sendfeedback(e.ChatMessage.Username, client, "chat"))
-        End Select
+        ChangeGameModeTo(GameModes.registration, New GameModes() {Nothing})
     End Sub
 
-    Private Sub registerplayer(username As String)
-        Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
-        If players.Exists(match) Then Exit Sub
-        Dim p As New Player(username)
-        players.Add(p)
-        players.Sort(Function(x, y) x.Name.CompareTo(y.Name))
-        drawalluserresults()
-        ListBox2.Items.Add(username + " - ")
-        ListBox3.Items.Add(username + " - ")
+    Private Sub Twitch_OnMessageReceived(ByVal sender As Object, ByVal e As OnMessageReceivedArgs)
+        Me.Invoke(Sub() Me.TwitchReceivedMessage(e.ChatMessage.Message, e.ChatMessage.Username, MessageModes.chat))
     End Sub
-    Private Sub unregisterplayer(username As String)
-        Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
-        If players.Exists(match) Then
-            Dim p As Player = players.Find(match)
-            players.Remove(p)
-        End If
-        drawalluserresults()
-        ListBox2.Items.Remove(username + " - ")
-        ListBox3.Items.Remove(username + " - ")
+
+    Private Sub Twitch_OnWhisperReceived(ByVal sender As Object, ByVal e As OnWhisperReceivedArgs)
+        Me.Invoke(Sub() Me.TwitchReceivedMessage(e.WhisperMessage.Message, e.WhisperMessage.Username, MessageModes.whisper))
     End Sub
-    Private Sub updatescore(username As String, score As Integer)
-        Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
-        If players.Exists(match) Then
-            Dim p As Player = players.Find(match)
-            p.Balls = score
-            p.updategraphic()
-            drawuserresult(p)
+
+    Private Sub Twitch_SendMessageToUser(receiver As String, message As String)
+        client.SendWhisper(receiver, message)
+    End Sub
+
+    Private Sub Twitch_SendMessageToChannel(receiver As String, message As String)
+        client.SendMessage(receiver, message)
+    End Sub
+
+
+
+    ' UI and application logic
+
+
+
+    Private Sub TwitchConnectionFailed(reason As String)
+        MsgBox(reason)
+        Me.Invoke(Sub() dumpdata())
+        Me.Invoke(Sub() Me.Close())
+    End Sub
+
+    Private Sub TwitchConnectionStatusChanged(status As String)
+        Debug.WriteLine(status)
+        If status.ToLower.Contains("channel") Then
+            Me.Invoke(Sub() TextBox3.Text = status)
+        Else
+            Me.Invoke(Sub() TextBox2.Text = status)
         End If
     End Sub
 
-    Private Sub OnWhisperReceived(ByVal sender As Object, ByVal e As OnWhisperReceivedArgs)
+    Private Sub TwitchReceivedMessage(message As String, fromUser As String, Optional howReceived As MessageModes = MessageModes.chat)
         Select Case True
-            Case e.WhisperMessage.Message.ToLower = "!in"
+            Case message.ToLower = "!in"
                 'client.SendWhisper(e.WhisperMessage.Username, "Your entry is confirmed.")
-                Me.Invoke(Sub() registerplayer(e.WhisperMessage.Username))
-            Case e.WhisperMessage.Message.ToLower = "!out"
-                Me.Invoke(Sub() unregisterplayer(e.WhisperMessage.Username))
-            Case e.WhisperMessage.Message.ToLower = "!feedback"
-                Me.Invoke(Sub() sendfeedback(e.WhisperMessage.Username, client, "whisper"))
-            Case gamemode = GameModes.guessing
-                If System.Text.RegularExpressions.Regex.IsMatch(e.WhisperMessage.Message, "^[A-Za-z]{5}$") Then
-                    Me.Invoke(Sub() updateplayerguess(e.WhisperMessage.Username, e.WhisperMessage.Message))
-                    Me.Invoke(Sub() lockinplayerguess(e.WhisperMessage.Username))
+                Me.Invoke(Sub() registerplayer(fromUser))
+            Case message.ToLower = "!out"
+                Me.Invoke(Sub() unregisterplayer(fromUser))
+            Case message.ToLower = "!feedback"
+                Me.Invoke(Sub() sendfeedback(fromUser, client, howReceived))
+            Case gamemode = GameModes.guessing And howReceived = MessageModes.whisper
+                If System.Text.RegularExpressions.Regex.IsMatch(message, "^[A-Za-z]{5}$") Then
+                    Me.Invoke(Sub() updateplayerguess(fromUser, message))
+                    Me.Invoke(Sub() lockinplayerguess(fromUser))
                     Dim stillwaiting As Boolean = False
                     For Each p As Player In players
                         'need to limit this to players who have not already gotten the word right
@@ -197,7 +156,7 @@ Public Class Form1
                     Next
                     If Not stillwaiting Then Me.Invoke(Sub() Button1.PerformClick())
                 Else
-                    Me.Invoke(Sub() updateplayernotes(e.WhisperMessage.Username, e.WhisperMessage.Message))
+                    Me.Invoke(Sub() updateplayernotes(fromUser, message))
                 End If
                 'Case gamemode = GameModes.results
                 '    Dim match As Predicate(Of Player) = Function(pl) pl.Name = e.WhisperMessage.Username
@@ -223,21 +182,106 @@ Public Class Form1
                 '            End If
                 '        End If
                 '    End If
-            Case Else
-                Me.Invoke(Sub() updateplayernotes(e.WhisperMessage.Username, e.WhisperMessage.Message))
+            Case howReceived = MessageModes.whisper
+                Me.Invoke(Sub() updateplayernotes(fromUser, message))
         End Select
     End Sub
 
-    Private Sub sendfeedback(username As String, client As TwitchClient, mode As String)
+    ' Change the game mode to `new_gamemode` but only if the current
+    ' game mode is in `only_from_gamemodes`
+    Private Sub ChangeGameModeTo(new_gamemode As GameModes, only_from_gamemodes As GameModes())
+        If only_from_gamemodes.Contains(gamemode) Then
+            ChangeGameModeTo(new_gamemode)
+        End If
+    End Sub
+
+    ' Change the game mode to `new_gamemode` (if it's not already that mode)
+    Private Sub ChangeGameModeTo(new_gamemode As GameModes)
+        If gamemode <> new_gamemode Then
+            ' Debug.WriteLine($"Switching game mode from {gamemode} to {new_gamemode}")
+            gamemode = new_gamemode
+        End If
+    End Sub
+
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
+        If My.Settings.channel = "" Then
+            channel = InputBox("What is the name of your channel?  Omit the 'twitch.tv/' part.")
+            My.Settings.channel = channel
+        Else
+            channel = My.Settings.channel
+        End If
+        gametimer = New Timer(1000)
+        AddHandler gametimer.Elapsed, New ElapsedEventHandler(AddressOf GameTimer_Tick)
+        wordlist = My.Resources.LingoWords.Split(vbCrLf.ToCharArray, StringSplitOptions.RemoveEmptyEntries).ToList
+        Dim r As New Random
+        For i As Integer = 0 To 999
+            ListBox1.Items.Add(wordlist(r.Next(wordlist.Count - 1)))
+        Next
+
+        Twitch_Connect("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym", channel)
+
+        Dim screennumber As Integer = 0
+        If My.Settings.screennumber = -1 Then
+            screennumber = InputBox("Which monitor should the public display use?  Typically, 0 is your 'main' display and 1,2,etc. are additional displays.  It is recommended to have the public display set up on a separate monitor from your main one.")
+            My.Settings.screennumber = screennumber
+        Else
+            screennumber = My.Settings.screennumber
+        End If
+        PublicDisplay.Location = Screen.AllScreens(screennumber).Bounds.Location
+        PublicDisplay.Size = Screen.AllScreens(screennumber).Bounds.Size
+        PublicDisplay.Show()
+    End Sub
+
+    Private Sub dumpdata()
+        Dim formatter As IFormatter = New BinaryFormatter()
+        Dim stream As Stream = New FileStream("lingosave.bin", FileMode.Create, FileAccess.Write, FileShare.None)
+        formatter.Serialize(stream, players)
+        stream.Close()
+    End Sub
+
+    Private Sub registerplayer(username As String)
+        Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
+        If players.Exists(match) Then Exit Sub
+        Dim p As New Player(username)
+        players.Add(p)
+        players.Sort(Function(x, y) x.Name.CompareTo(y.Name))
+        drawalluserresults()
+        ListBox2.Items.Add(username + " - ")
+        ListBox3.Items.Add(username + " - ")
+    End Sub
+
+    Private Sub unregisterplayer(username As String)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
             Dim p As Player = players.Find(match)
-            p.setfeedback(mode)
+            players.Remove(p)
+        End If
+        drawalluserresults()
+        ListBox2.Items.Remove(username + " - ")
+        ListBox3.Items.Remove(username + " - ")
+    End Sub
+
+    Private Sub updatescore(username As String, score As Integer)
+        Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
+        If players.Exists(match) Then
+            Dim p As Player = players.Find(match)
+            p.Balls = score
+            p.updategraphic()
+            drawuserresult(p)
+        End If
+    End Sub
+
+    Private Sub sendfeedback(username As String, client As TwitchClient, mode As MessageModes)
+        Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
+        If players.Exists(match) Then
+            Dim p As Player = players.Find(match)
             Select Case mode
-                Case "whisper"
-                    client.SendWhisper(username, p.feedback)
-                Case "chat"
-                    client.SendMessage(channel, p.feedback)
+                Case MessageModes.whisper
+                    p.setfeedback(True)
+                    Twitch_SendMessageToUser(username, p.feedback)
+                Case MessageModes.chat
+                    p.setfeedback(False)
+                    Twitch_SendMessageToChannel(channel, p.feedback)
             End Select
         End If
     End Sub
@@ -264,6 +308,7 @@ Public Class Form1
             Next
         End If
     End Sub
+
     Private Sub updateplayernotes(username As String, message As String)
         Dim match As Predicate(Of Player) = Function(pl) pl.Name = username
         If players.Exists(match) Then
@@ -280,7 +325,7 @@ Public Class Form1
     End Sub
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        gamemode = GameModes.results
+        ChangeGameModeTo(GameModes.results)
         Dim beenguessed As Boolean = False
         For Each p As Player In players
             If wordlist.Contains(p.guess.ToUpper) AndAlso p.roundresult(roundnum - 1) = 0 Then
@@ -358,12 +403,14 @@ Public Class Form1
             g.DrawImage(My.Resources.hack2, 0, 0)
         End Using
     End Sub
+
     Private Sub drawuserresult(p As Player)
         Using g As Graphics = PublicDisplay.PictureBox1.CreateGraphics
             g.DrawImage(p.graphic, p.position.X, p.position.Y, p.size.Width, p.size.Height)
             'PublicDisplay.PictureBox1.Invalidate(New Rectangle(p.position.X, p.position.Y, p.size.Width, p.size.Height))
         End Using
     End Sub
+
     Private Sub ListBox1_MouseDoubleClick(sender As Object, e As MouseEventArgs) Handles ListBox1.MouseDoubleClick
         Label4.Text = ListBox1.SelectedItem
     End Sub
@@ -375,9 +422,10 @@ Public Class Form1
 
         End If
     End Sub
+
     Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
         roundnum += 1
-        gamemode = GameModes.guessing
+        ChangeGameModeTo(GameModes.guessing)
         numballs = 6 * ballmultiplier
         For Each p As Player In players
             p.updategraphic("     ", False)
@@ -398,7 +446,7 @@ Public Class Form1
     End Sub
 
     Private Sub Button3_Click(sender As Object, e As EventArgs) Handles Button3.Click
-        gamemode = GameModes.guessing
+        ChangeGameModeTo(GameModes.guessing)
         For Each p As Player In players
             p.guess = ""
             p.updategraphic("     ", False)
