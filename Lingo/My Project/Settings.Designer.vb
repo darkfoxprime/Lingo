@@ -69,12 +69,12 @@ Namespace My
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
          Global.System.Configuration.DefaultSettingValueAttribute("")>  _
-        Public Property channel() As String
+        Public Property twitch_channel() As String
             Get
-                Return CType(Me("channel"),String)
+                Return CType(Me("twitch_channel"),String)
             End Get
             Set
-                Me("channel") = value
+                Me("twitch_channel") = value
             End Set
         End Property
         
@@ -87,6 +87,30 @@ Namespace My
             End Get
             Set
                 Me("screennumber") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property twitch_username() As String
+            Get
+                Return CType(Me("twitch_username"),String)
+            End Get
+            Set
+                Me("twitch_username") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property twitch_oauth() As String
+            Get
+                Return CType(Me("twitch_oauth"),String)
+            End Get
+            Set
+                Me("twitch_oauth") = value
             End Set
         End Property
     End Class
