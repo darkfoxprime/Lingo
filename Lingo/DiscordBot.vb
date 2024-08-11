@@ -76,7 +76,11 @@ Public Class DiscordBot
 
         Public Sub New(User As Discord.IUser)
             _UserId = User.Id
-            _UserName = User.GlobalName
+            If String.IsNullOrEmpty(User.GlobalName) Then
+                _UserName = User.Username
+            Else
+                _UserName = User.GlobalName
+            End If
             _User = User
         End Sub
     End Class
