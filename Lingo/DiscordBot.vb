@@ -165,6 +165,8 @@ Public Class DiscordBot
     Public Event MessageReceived(Message As String, Source As IChatBot.IUser, Channel As IChatBot.IChannel) Implements IChatBot.MessageReceived
     Public Event PrivateMessageReceived(Message As String, Source As IChatBot.IUser) Implements IChatBot.PrivateMessageReceived
 
+    ' Code
+
     Public Sub New(DiscordBotToken As String, DiscordChannel As String, Optional LogLevel As Discord.LogSeverity = DefaultLogSeverity)
         SocketConfig = New DiscordSocketConfig() With {
             .GatewayIntents = GatewayIntents.Guilds Or GatewayIntents.GuildMessages Or GatewayIntents.DirectMessages Or GatewayIntents.MessageContent,
@@ -255,7 +257,11 @@ Public Class DiscordBot
 
     Private Function Client_MessageReceived(Message As SocketMessage) As Task Handles Client.MessageReceived
         If Message.Author.Id <> Me.Client.CurrentUser.Id Then
-            RaiseEvent MessageReceived(Message.Content, New User(Message.Author), New Channel(Message.Channel))
+            If TypeOf (Message.Channel) Is IPrivateChannel Then
+                RaiseEvent PrivateMessageReceived(Message.Content, New User(Message.Author))
+            Else
+                RaiseEvent MessageReceived(Message.Content, New User(Message.Author), New Channel(Message.Channel))
+            End If
         End If
         Return Task.CompletedTask
     End Function
