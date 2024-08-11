@@ -91,6 +91,18 @@ Public Interface IChatBot
     Event PrivateMessageReceived(Message As String, Source As IUser)
 
     ''' <summary>
+    ''' Return the user of the bot itself.
+    ''' </summary>
+    ''' <returns>The <see cref="IUser"/> representation of the bot.</returns>
+    ReadOnly Property BotUser As IUser
+
+    ''' <summary>
+    ''' Return the owner of the 'bot in this chat system.
+    ''' </summary>
+    ''' <returns>The <see cref="IUser"/> representation of the bot's owner.</returns>
+    ReadOnly Property BotOwner As IUser
+
+    ''' <summary>
     ''' Find a chat channel and return its <see cref="IChannel"/> representation.
     ''' </summary>
     ''' <param name="ChannelName">The name of the channel to find.</param>
@@ -103,12 +115,6 @@ Public Interface IChatBot
     ''' <param name="UserName">The name of the user to find.</param>
     ''' <returns>The <see cref="IUser"/> representation of the user.</returns>
     Function FindUser(UserName As String) As IUser
-
-    ''' <summary>
-    ''' Return the bot's owner.
-    ''' </summary>
-    ''' <returns>The <see cref="IUser"/> representation of the bot's owner.</returns>
-    Function BotOwner() As IUser
 
     ''' <summary>
     ''' Close the bot's connection to the server.
