@@ -22,6 +22,9 @@ Public Class Form1
     Public roundnum As Integer = 0
     Public ballmultiplier As Integer = 1
 
+    Private BotChannel As String
+    Private DirectMessageName As String
+
 
 
     ' Private classes and types
@@ -51,7 +54,7 @@ Public Class Form1
     Private Sub ChatBot_Ready() Handles ChatBot.Ready
         ' Only do the initial steps if we haven't done anything yet
         If gamemode = GameModes.notready Then
-            Channel.SendMessage("Lingo is LIVE!  To sign up: Using either the Twitch chat or a whisper to KourageTheCowardlyBot, type the word '!in'!")
+            Channel.SendMessage($"Lingo is LIVE!  To sign up: Using either {BotChannel} or a {DirectMessageName} to {ChatBot.BotUser.UserName}, type the word '!in'!")
             ChangeGameModeTo(GameModes.registration)
         End If
     End Sub
@@ -292,6 +295,9 @@ Public Class Form1
                 My.Settings.twitch_oauth_token = InputBox("What Twitch OAuth Token should I use to log in?")
             End If
 
+            BotChannel = "the Twitch chat"
+            DirectMessageName = "whisper"
+
             ' Twitch_Connect("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym", channel)
             ChatBot = New TwitchBot(
                 My.Settings.twitch_username,
@@ -308,6 +314,9 @@ Public Class Form1
             If My.Settings.discord_oauth_token = "" Then
                 My.Settings.discord_oauth_token = InputBox("What Discord OAuth Token should I use to log in?")
             End If
+
+            BotChannel = $"#{My.Settings.discord_channel}"
+            DirectMessageName = "direct message"
 
             Dim log_level = If(My.Settings.DEBUG, DiscordBot.LogSeverity.Debug, DiscordBot.DefaultLogSeverity)
             ChatBot = New DiscordBot(
