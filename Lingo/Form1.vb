@@ -114,8 +114,8 @@ Public Class Form1
     Private Sub Handle_ChatBot_Message(message As String, fromUser As IChatBot.IUser, Optional howReceived As MessageModes = MessageModes.chat)
         Select Case True
             Case message.ToLower = "!in"
-                'client.SendWhisper(e.WhisperMessage.Username, "Your entry is confirmed.")
                 Me.Invoke(Sub() registerplayer(fromUser.UserName))
+                fromUser.SendMessage("Your entry is confirmed.")
             Case message.ToLower = "!out"
                 Me.Invoke(Sub() unregisterplayer(fromUser.UserName))
             Case message.ToLower = "!feedback"
