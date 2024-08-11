@@ -177,11 +177,6 @@ Public Class TwitchBot
     Public ReadOnly BotChannel As Channel
 
     ''' <summary>
-    ''' The Twitch channel that the 'bot listens and posts to.
-    ''' </summary>
-    Public ReadOnly Owner As User
-
-    ''' <summary>
     ''' The Twitch API connection
     ''' </summary>
     Private WithEvents Client As TwitchClient
@@ -192,6 +187,34 @@ Public Class TwitchBot
     ''' then do not try to reconnect.
     ''' </summary>
     Private ConnectionClosed As Boolean = True
+
+    ''' <summary>
+    ''' The backing store for <see cref="BotOwner"/>.
+    ''' </summary>
+    Private _BotOwner As User
+    ''' <summary>
+    ''' The owner of the bot.
+    ''' </summary>
+    ''' <returns>The <see cref="IChatBot.IUser"/> representation of the bot's owner.</returns>
+    Public ReadOnly Property BotOwner As IChatBot.IUser Implements IChatBot.BotOwner
+        Get
+            Return _BotOwner
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' The backing store for <see cref="BotUser"/>
+    ''' </summary>
+    Private _BotUser As User
+    ''' <summary>
+    ''' The user the bot is running as.
+    ''' </summary>
+    ''' <returns>The <see cref="IChatBot.IUser"/> representation of the bot's user.</returns>
+    Public ReadOnly Property BotUser As IChatBot.IUser Implements IChatBot.BotUser
+        Get
+            Return _BotUser
+        End Get
+    End Property
 
 
 
@@ -210,7 +233,8 @@ Public Class TwitchBot
         Username = botUsername
         OAuthToken = botOAuth
         BotChannel = New Channel(channelName, Me)
-        Owner = New User(botOwner, Me)
+        _BotOwner = New User(botOwner, Me)
+        _BotUser = New User(Username, Me)
         Client = New TwitchClient()
         ' Initialize the client
         Dim credentials As New ConnectionCredentials(Username, OAuthToken)
@@ -351,17 +375,6 @@ Public Class TwitchBot
     ''' <returns>The <see cref="IChatBot.IUser"/> corresponding to the named user.</returns>
     Public Function FindUser(UserName As String) As IChatBot.IUser Implements IChatBot.FindUser
         Return New User(UserName, Me)
-    End Function
-
-    ''' <summary>
-    ''' Return the bot's owner.
-    ''' 
-    ''' NOTE - twitch does not seem to have registered bots, and so has no way of determining the bot's owner.
-    ''' This just returns the <code>Owner</code> user object that was created as part of this instance.
-    ''' </summary>
-    ''' <returns>The <code>Owner</code> of the bot.</returns>
-    Public Function BotOwner() As IChatBot.IUser Implements IChatBot.BotOwner
-        Return Owner
     End Function
 
     ''' <summary>
