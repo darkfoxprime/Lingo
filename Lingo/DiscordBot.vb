@@ -118,6 +118,36 @@ Public Class DiscordBot
     ''' </summary>
     Private ConnectionClosed As Boolean
 
+    ' Properties
+
+    ''' <summary>
+    ''' The owner of the bot.
+    ''' </summary>
+    ''' <returns>The <see cref="IChatBot.IUser"/> representation of the bot's owner.</returns>
+    Public ReadOnly Property BotOwner As IChatBot.IUser Implements IChatBot.BotOwner
+        Get
+            Return _BotOwner
+        End Get
+    End Property
+    ''' <summary>
+    ''' The backing store for the <see cref="BotOwner"/> property
+    ''' </summary>
+    Private _BotOwner As User
+
+    ''' <summary>
+    ''' The bot user itself.
+    ''' </summary>
+    ''' <returns>The <see cref="IChatBot.IUser"/> representation of the bot's user.</returns>
+    Public ReadOnly Property BotUser As IChatBot.IUser Implements IChatBot.BotUser
+        Get
+            Return _BotUser
+        End Get
+    End Property
+    ''' <summary>
+    ''' The backing store for the <see cref="BotUser"/> property
+    ''' </summary>
+    Private _BotUser As User
+
     ' Events
 
     Public Event Ready() Implements IChatBot.Ready
@@ -161,10 +191,6 @@ Public Class DiscordBot
         Client = Nothing
     End Sub
 
-    Public Function BotOwner() As IChatBot.IUser Implements IChatBot.BotOwner
-        Return New User(ApplicationInfo.Owner)
-    End Function
-
     Public Function FindUser(Username As String) As IChatBot.IUser Implements IChatBot.FindUser
         If Not String.IsNullOrWhiteSpace(Username) Then
             Dim _id As ULong
@@ -204,6 +230,8 @@ Public Class DiscordBot
     End Function
 
     Private Function Client_Ready() As Task Handles Client.Ready
+        _BotOwner = New User(ApplicationInfo.Owner)
+        _BotUser = New User(Client.CurrentUser)
         Dim channel = FindChannel(ChannelNameToJoin)
         If channel IsNot Nothing Then
             RaiseEvent JoinedChannel(channel)
