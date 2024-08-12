@@ -125,6 +125,66 @@ Namespace My
                 Me("twitch_bot_owner") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property discord_oauth_token() As String
+            Get
+                Return CType(Me("discord_oauth_token"),String)
+            End Get
+            Set
+                Me("discord_oauth_token") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property discord_channel() As String
+            Get
+                Return CType(Me("discord_channel"),String)
+            End Get
+            Set
+                Me("discord_channel") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("LiquidKourage")>  _
+        Public Property discord_bot_owner() As String
+            Get
+                Return CType(Me("discord_bot_owner"),String)
+            End Get
+            Set
+                Me("discord_bot_owner") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("twitch")>  _
+        Public Property default_bot_type() As String
+            Get
+                Return CType(Me("default_bot_type"),String)
+            End Get
+            Set
+                Me("default_bot_type") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("True")>  _
+        Public Property DEBUG() As Boolean
+            Get
+                Return CType(Me("DEBUG"),Boolean)
+            End Get
+            Set
+                Me("DEBUG") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

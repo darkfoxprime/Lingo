@@ -20,5 +20,20 @@
     <Setting Name="twitch_bot_owner" Type="System.String" Scope="User">
       <Value Profile="(Default)">Liquid_Kourage</Value>
     </Setting>
+    <Setting Name="discord_oauth_token" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="discord_channel" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="discord_bot_owner" Type="System.String" Scope="User">
+      <Value Profile="(Default)">LiquidKourage</Value>
+    </Setting>
+    <Setting Name="default_bot_type" Type="System.String" Scope="User">
+      <Value Profile="(Default)">twitch</Value>
+    </Setting>
+    <Setting Name="DEBUG" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
