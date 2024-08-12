@@ -204,7 +204,8 @@ Public Class TwitchBot
     ''' <param name="botOAuth">The OAuth Token which will authenticate the bot.</param>
     ''' <param name="channelName">The Twitch channel to connect to.</param>
     ''' <param name="botOwner">The name of the user who owns the bot.</param>
-    Public Sub New(botUsername As String, botOAuth As String, channelName As String, botOwner As String)
+    ''' <param name="Debug">If True, all log messages received from the Twitch client will be output.</param>
+    Public Sub New(botUsername As String, botOAuth As String, channelName As String, botOwner As String, Optional Debug As Boolean = False)
         ' Populate instance fields
         Username = botUsername
         OAuthToken = botOAuth
@@ -214,6 +215,9 @@ Public Class TwitchBot
         ' Initialize the client
         Dim credentials As New ConnectionCredentials(Username, OAuthToken)
         Client.Initialize(credentials, BotChannel.ChannelName)
+        If Debug Then
+            AddHandler Client.OnLog, AddressOf Twitch_onLog
+        End If
         ' Connect to the API
         Connect()
     End Sub
@@ -227,6 +231,15 @@ Public Class TwitchBot
         Catch ex As Exception
             RaiseEvent ConnectionFailed(ex.Message)
         End Try
+    End Sub
+
+    ''' <summary>
+    ''' If added as a handler, report all log messages on the Debug stream.
+    ''' </summary>
+    ''' <param name="sender">The API object which raised the event.</param>
+    ''' <param name="e">The <see cref="TwitchLib.Client.Events.OnLogArgs"/> that contains the log message data.</param>
+    Private Sub Twitch_onLog(sender As Object, e As OnLogArgs)
+        Debug.WriteLine($"{e.DateTime} {e.Data}")
     End Sub
 
     ''' <summary>
