@@ -262,16 +262,62 @@ Public Class Form1
     ' UI Logic
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles Me.Load
-        If My.Settings.twitch_channel = "" Then
-            My.Settings.twitch_channel = InputBox("What is the name of your Twitch channel?  Omit the 'twitch.tv/' part.")
+        Dim bot_type = My.Settings.default_bot_type
+        For Each arg In My.Application.CommandLineArgs
+            Select Case arg
+                Case "-discord"
+                    bot_type = "discord"
+                Case "-twitch"
+                    bot_type = "twitch"
+                Case Else
+                    MessageBox.Show($"Ignoring unknown command line argument {arg} and all remaining arguments!")
+                    Exit For
+            End Select
+        Next
+        ' just in case the default `My.Settings.default_bot_type` is an unknown type
+        If Not {"twitch", "discord"}.Contains(bot_type) Then
+            MessageBox.Show($"Unknown bot type {bot_type} found, assuming `twitch`!")
+            bot_type = "twitch"
         End If
+        If bot_type = "twitch" Then
+            If My.Settings.twitch_channel = "" Then
+                My.Settings.twitch_channel = InputBox("What is the name of your Twitch channel?  Omit the 'twitch.tv/' part.")
+            End If
 
-        If My.Settings.twitch_username = "" Then
-            My.Settings.twitch_username = InputBox("What Twitch username should I log in to?")
-        End If
+            If My.Settings.twitch_username = "" Then
+                My.Settings.twitch_username = InputBox("What Twitch username should I log in to?")
+            End If
 
-        If My.Settings.twitch_oauth_token = "" Then
-            My.Settings.twitch_oauth_token = InputBox("What Twitch OAuth Token should I use to log in?")
+            If My.Settings.twitch_oauth_token = "" Then
+                My.Settings.twitch_oauth_token = InputBox("What Twitch OAuth Token should I use to log in?")
+            End If
+
+            ' Twitch_Connect("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym", channel)
+            ChatBot = New TwitchBot(
+                My.Settings.twitch_username,
+                My.Settings.twitch_oauth_token,
+                My.Settings.twitch_channel,
+                My.Settings.twitch_bot_owner,
+                Debug:=My.Settings.DEBUG
+            )
+        ElseIf bot_type = "discord" Then
+            If My.Settings.discord_channel = "" Then
+                My.Settings.discord_channel = InputBox("What Discord channel do you want the bot to talk on?")
+            End If
+
+            If My.Settings.discord_oauth_token = "" Then
+                My.Settings.discord_oauth_token = InputBox("What Discord OAuth Token should I use to log in?")
+            End If
+
+            Dim log_level = If(My.Settings.DEBUG, DiscordBot.LogSeverity.Debug, DiscordBot.DefaultLogSeverity)
+            ChatBot = New DiscordBot(
+                My.Settings.discord_oauth_token,
+                My.Settings.discord_channel,
+                LogLevel:=log_level
+            )
+        Else
+            ' Should be unreachable
+            ChatBot = Nothing
         End If
 
         gametimer = New Timer(1000)
@@ -281,9 +327,6 @@ Public Class Form1
         For i As Integer = 0 To 999
             ListBox1.Items.Add(wordlist(r.Next(wordlist.Count - 1)))
         Next
-
-        ' Twitch_Connect("kouragethecowardlybot", "mui2jnpzbi4ne7uohndwz5j0scbpym", channel)
-        ChatBot = New TwitchBot(My.Settings.twitch_username, My.Settings.twitch_oauth_token, My.Settings.twitch_channel, My.Settings.twitch_bot_owner)
 
         Dim screennumber As Integer = 0
         If My.Settings.screennumber = -1 Then
