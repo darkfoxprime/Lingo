@@ -65,12 +65,12 @@ Public Interface IChatBot
     ''' <summary>
     ''' Raised when the bot joins a channel.
     ''' </summary>
-    ''' <param name="Channel">The <see cref="IChannel"</see> representing the channel that was joined.</param>
+    ''' <param name="Channel">The <see cref="IChannel"/> representing the channel that was joined.</param>
     Event JoinedChannel(Channel As IChannel)
     ''' <summary>
     ''' Raised when the bot leaves a channel.
     ''' </summary>
-    ''' <param name="Channel">The <see cref="IChannel"</see> representing the channel that was left.</param>
+    ''' <param name="Channel">The <see cref="IChannel"/> representing the channel that was left.</param>
     Event LeftChannel(Channel As IChannel)
     ''' <summary>
     ''' Raised when the bot is ready (meaning the client has connected and the bot has joined its channel).
@@ -101,7 +101,7 @@ Public Interface IChatBot
     ''' Find a user and return their <see cref="IUser"/> representation.
     ''' </summary>
     ''' <param name="UserName">The name of the user to find.</param>
-    ''' <returns>The <see cref="User"/> representation of the user.</returns>
+    ''' <returns>The <see cref="IUser"/> representation of the user.</returns>
     Function FindUser(UserName As String) As IUser
 
     ''' <summary>
