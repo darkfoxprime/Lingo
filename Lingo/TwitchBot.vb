@@ -40,7 +40,7 @@ Public Class TwitchBot
         ''' <summary>
         ''' Backing store for <see cref="UserName"/>
         ''' </summary>
-        Private _UserName As String
+        Private ReadOnly _UserName As String
 
         ''' <summary>
         ''' The unique ID (in this case, the "room ID") for the user.
@@ -55,7 +55,7 @@ Public Class TwitchBot
         ''' <summary>
         ''' The TwitchBot which holds the client used to talk to the user.
         ''' </summary>
-        Private _TwitchBot As TwitchBot
+        Private ReadOnly _TwitchBot As TwitchBot
 
         ''' <summary>
         ''' Send a message to this user.
@@ -97,7 +97,7 @@ Public Class TwitchBot
         ''' <summary>
         ''' Backing store for <see cref="ChannelName"/>
         ''' </summary>
-        Private _ChannelName As String
+        Private ReadOnly _ChannelName As String
 
         ''' <summary>
         ''' The unique ID (in this case, the "room ID") for the channel.
@@ -112,7 +112,7 @@ Public Class TwitchBot
         ''' <summary>
         ''' The TwitchBot which holds the client used to talk to the channel.
         ''' </summary>
-        Private _TwitchBot As TwitchBot
+        Private ReadOnly _TwitchBot As TwitchBot
 
         ''' <summary>
         ''' Send a message to this channel.
