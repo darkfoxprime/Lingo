@@ -233,7 +233,7 @@ Public Class TwitchBot
     ''' Catches Twitch errors and reports them to the Debug stream.
     ''' </summary>
     ''' <param name="sender">The API object which raised the event.</param>
-    ''' <param name="e">The <code></code> which contains the exception that was caught.</param>
+    ''' <param name="e">The <see cref="TwitchLib.Communication.Events.OnErrorEventArgs"/> which contains the exception that was caught.</param>
     Private Sub Twitch_onError(sender As Object, e As OnErrorEventArgs) Handles Client.OnError
         Debug.WriteLine(e.Exception.Message)
     End Sub
